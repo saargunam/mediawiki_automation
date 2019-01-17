@@ -1,0 +1,84 @@
+---
+- hosts: webservers
+  user: cloud_user
+  become: true
+
+  tasks:
+    - name: install httpd
+      yum:
+        name: httpd
+
+    - name: install php and maria db
+      yum: name={{item}} state=installed
+      with_items:  
+      - php
+      - php-mysql
+      - php-xml
+      - php-gd
+      - php-mbstring
+      - mariadb-server
+      - mariadb
+      - MySQL-python
+    
+    - name: start httpd
+      service:
+        name: httpd
+        state: started
+
+    - name: start mariadb
+      service:
+        name: mariadb
+        state: started
+
+    - name: Create a new database with name 'wikidatabase'
+      mysql_db:
+        name: wikidatabase
+        state: present
+
+
+    - mysql_user:
+        name: wiki
+        password: admin123
+        priv: 'wikidatabase.*:ALL,GRANT'
+        state: present
+    
+    - name: Enable service httpd
+      service:
+        name: httpd
+        enabled: yes
+
+
+    - name: Enable service mariadb
+      service:
+        name: mariadb
+        enabled: yes
+
+    - name: Download latest wordpress
+      get_url:
+        url: https://releases.wikimedia.org/mediawiki/1.32/mediawiki-1.32.0.tar.gz
+        dest: /root/
+    
+    - name: Download latest wordpress
+      get_url:
+        url: https://releases.wikimedia.org/mediawiki/1.32/mediawiki-1.32.0.tar.gz.sig
+        dest: /root/
+
+    - name: Download gpg public key
+      get_url:
+        url: https://www.mediawiki.org/keys/keys.txt
+        dest: /root
+      
+    - name : Import gpg 
+      command: gpg2 --import /root/keys.txt
+
+    - name : Verify gpg
+      command: gpg2 --verify /root/mediawiki-1.32.0.tar.gz.sig /root/mediawiki-1.32.0.tar.gz
+      
+    - name: Extract to /var/www/html
+      unarchive:
+        src: /root/mediawiki-1.32.0.tar.gz
+        dest: /var/www/
+        remote_src: True
+
+    - name : symlink
+      command: ln -s /var/www/mediawiki-1.32.0/ /var/www/mediawiki
