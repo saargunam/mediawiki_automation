@@ -8,6 +8,34 @@
       yum:
         name: httpd
 
+    - name: Download latest epel rpm
+      get_url:
+        url: https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+        dest: /tmp/
+
+    - name: Download latest epel rpm
+      get_url:
+        url: http://rpms.remirepo.net/enterprise/remi-release-7.rpm
+        dest: /tmp/
+
+    - name: Install epel rpm 
+      yum:
+        name: /tmp/epel-release-latest-7.noarch.rpm
+        state: present
+
+    - name: Install remi rpm
+      yum:
+        name: /tmp/remi-release-7.rpm
+        state: present
+    
+    - name: install yum-utils
+      yum:
+        name: yum-utils
+
+    - name: Enable PHP 7.2
+      command: yum-config-manager --enable remi-php72
+
+
     - name: install php and maria db
       yum: name={{item}} state=installed
       with_items:  
@@ -19,15 +47,17 @@
       - mariadb-server
       - mariadb
       - MySQL-python
-    
-    - name: start httpd
-      service:
-        name: httpd
-        state: started
+      - firewalld
+  
 
     - name: start mariadb
       service:
         name: mariadb
+        state: started
+
+    - name: start firewalld
+      service:
+        name: firewalld
         state: started
 
     - name: Create a new database with name 'wikidatabase'
@@ -53,12 +83,12 @@
         name: mariadb
         enabled: yes
 
-    - name: Download latest wordpress
+    - name: Download mediawiki package
       get_url:
         url: https://releases.wikimedia.org/mediawiki/1.32/mediawiki-1.32.0.tar.gz
         dest: /root/
     
-    - name: Download latest wordpress
+    - name: Download mediawiki signature
       get_url:
         url: https://releases.wikimedia.org/mediawiki/1.32/mediawiki-1.32.0.tar.gz.sig
         dest: /root/
@@ -80,5 +110,35 @@
         dest: /var/www/
         remote_src: True
 
-    - name : symlink
-      command: ln -s /var/www/mediawiki-1.32.0/ /var/www/mediawiki
+    - name: symlink and folder permissions for mediawiki
+      command: "{{item}}"
+      with_items:
+        - ln -s /var/www/mediawiki-1.32.0/ /var/www/mediawiki 
+        - chown -R apache:apache /var/www/mediawiki 
+        - chown -R apache:apache /var/www/mediawiki-1.32.0
+
+
+    - name: copying httpd conf
+      copy:
+        src: httpd.conf
+        dest: /etc/httpd/conf/httpd.conf
+        owner: root
+        group: root
+        mode: u+rw,g-wx,o-rwx
+
+    - name: restore SELinux file perm on httpd conf
+      command: chcon system_u:object_r:httpd_config_t:s0 /etc/httpd/conf/httpd.conf 
+
+    - name: restart httpd     
+      service:
+        name: httpd
+        state: restarted
+
+    - name: firewall and SEliunx settings
+      command: "{{item}}"
+      with_items:
+        - firewall-cmd --add-service=http 
+        - firewall-cmd --add-service=https 
+        - restorecon -FR /var/www/mediawiki-1.32.0/ 
+        - restorecon -FR /var/www/mediawiki
+      
