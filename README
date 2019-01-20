@@ -1,0 +1,26 @@
+## Mediawiki automation
+
+1. Terraform : For provisioning two instances and attaching them to a elastic load balancer.
+
+
+2. Ansible : For configuring the VMs and installing mediawiki in a sinle node setup 
+
+
+Commands to be used for execution :
+
+Move into terraform directory :
+
+-> terraform init
+
+-> terraform plan
+
+-> terraform apply
+
+For deletion :
+
+-> terraform destroy
+
+
+Move into ansible directory :
+
+-> ansible-playbook -i hosts test.yaml 
