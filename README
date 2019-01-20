@@ -1,9 +1,9 @@
 ## Mediawiki automation
 
-1. Terraform : For provisioning two instances and attaching them to a elastic load balancer.
+1. Terraform : For provisioning two redhat instances and attaching them to a elastic load balancer.
 
 
-2. Ansible : For configuring the VMs and installing mediawiki in a sinle node setup 
+2. Ansible : For configuring the VMs and installing mediawiki in a single node setup [ Web and DB in same node ]
 
 
 Commands to be used for execution :
@@ -16,6 +16,8 @@ Move into terraform directory :
 
 -> terraform apply
 
+Note : Public key should be added in the main.tf file.
+
 For deletion :
 
 -> terraform destroy
@@ -24,3 +26,5 @@ For deletion :
 Move into ansible directory :
 
 -> ansible-playbook -i hosts test.yaml 
+
+Note : Take the IPs from terraform output and add into hosts file.
